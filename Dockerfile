@@ -1,5 +1,5 @@
 # Stage 1: Builder
-FROM python:3.13-bullseye as builder
+FROM python:3.13-bullseye AS builder
 
 # Install Python 3, venv, pip, and build dependencies
 RUN apt-get update && apt-get install -y \
