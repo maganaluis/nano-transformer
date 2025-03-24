@@ -26,7 +26,7 @@ class PositionalEncoding(nn.Module):
 class DummyTransformer(pl.LightningModule):
     def __init__(self, d_model=512, nhead=8, num_encoder_layers=2, num_decoder_layers=2,
                  dim_feedforward=2048, dropout=0.1, input_vocab_size=1000, output_vocab_size=1000,
-                 max_seq_length=100):
+                 max_seq_length=128):
         super().__init__()
         self.save_hyperparameters()
 

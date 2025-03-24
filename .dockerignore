@@ -23,3 +23,15 @@ docker-compose*
 # Log files and temporary files
 *.log
 tmp/
+
+# VSCode
+.vscode
+
+# wandb
+wandb/
+
+# hydra outputs
+outputs/
+
+# model
+dummy_transformer_project/

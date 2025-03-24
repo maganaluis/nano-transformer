@@ -175,3 +175,12 @@ cython_debug/
 
 # VSCode
 .vscode
+
+# wandb
+wandb/
+
+# hydra outputs
+outputs/
+
+# model
+dummy_transformer_project/

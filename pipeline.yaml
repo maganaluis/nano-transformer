@@ -1,0 +1,43 @@
+# PIPELINE DEFINITION
+# Name: simple-train-pipeline
+components:
+  comp-model-train:
+    executorLabel: exec-model-train
+deploymentSpec:
+  executors:
+    exec-model-train:
+      container:
+        args:
+        - -c
+        - ' python3 main.py'
+        command:
+        - /bin/sh
+        image: deepvolition/nano-transformer:latest
+        resources:
+          accelerator:
+            resourceCount: '1'
+pipelineInfo:
+  name: simple-train-pipeline
+root:
+  dag:
+    tasks:
+      model-train:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-model-train
+        taskInfo:
+          name: model-train
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.12.1
+---
+platforms:
+  kubernetes:
+    deploymentSpec:
+      executors:
+        exec-model-train:
+          secretAsEnv:
+          - keyToEnv:
+            - envVar: WANDB_API_KEY
+              secretKey: password
+            secretName: wandb-api-key
