@@ -1,0 +1,65 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nano-transformer"
+dynamic = ["version"]
+description = ''
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "Luis", email = "maganaluis92@gmail.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+  "torch==2.6.*",
+  "lightning==2.5.*",
+  "wandb==0.19.*"
+]
+
+[project.urls]
+Documentation = "https://github.com/Luis/nano-transformer#readme"
+Issues = "https://github.com/Luis/nano-transformer/issues"
+Source = "https://github.com/Luis/nano-transformer"
+
+[tool.hatch.version]
+path = "src/nano_transformer/__about__.py"
+
+[tool.hatch.envs.types]
+extra-dependencies = [
+  "mypy>=1.0.0",
+]
+[tool.hatch.envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:src/nano_transformer tests}"
+
+[tool.coverage.run]
+source_pkgs = ["nano_transformer", "tests"]
+branch = true
+parallel = true
+omit = [
+  "src/nano_transformer/__about__.py",
+]
+
+[tool.coverage.paths]
+nano_transformer = ["src/nano_transformer", "*/nano-transformer/src/nano_transformer"]
+tests = ["tests", "*/nano-transformer/tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
