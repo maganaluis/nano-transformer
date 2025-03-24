@@ -8,12 +8,13 @@ from nano_transformer.models import DummyTransformer
 from nano_transformer.data import DummyDataset
 
 import torch
-
+import wandb
+wandb.login()
 torch.set_float32_matmul_precision('medium')
 
 def main():
     # Set up Weights & Biases logger
-    wandb_logger = WandbLogger(project="dummy_transformer_project", name="dummy_transformer_run")
+    wandb_logger = WandbLogger(project="dummy_transformer_project", name="dummy_transformer_run", log_model="all")
     
     # Configure callbacks:
     # ModelCheckpoint to save the best model based on training loss.
@@ -36,7 +37,7 @@ def main():
     
     # Set up the dataset and dataloader.
     batch_size = 32
-    seq_length = 30
+    seq_length = 32
     vocab_size = 1000
     dataset = DummyDataset(num_samples=1000, seq_length=seq_length, vocab_size=vocab_size)
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
