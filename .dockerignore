@@ -1,0 +1,25 @@
+# Python cache files
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Git files
+.git
+.gitignore
+
+# Virtual environment directories (if present)
+venv
+env
+
+# Test and documentation directories (if not needed in the container)
+tests
+docs
+
+# Docker files (optional, if you don't need them in the image)
+Dockerfile*
+docker-compose*
+
+# Log files and temporary files
+*.log
+tmp/
