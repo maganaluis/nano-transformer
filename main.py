@@ -1,5 +1,7 @@
 # main.py
 
+import hydra
+from omegaconf import OmegaConf, DictConfig
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
@@ -12,44 +14,49 @@ import wandb
 wandb.login()
 torch.set_float32_matmul_precision('medium')
 
-def main():
-    # Set up Weights & Biases logger
-    wandb_logger = WandbLogger(project="dummy_transformer_project", name="dummy_transformer_run", log_model="all")
+@hydra.main(version_base=None, config_path="conf", config_name="config")
+def main(cfg: DictConfig):
+    # Merge the full YAML string if provided
+    if cfg.get("config_str"):
+        extra_cfg = OmegaConf.create(cfg.config_str)
+        cfg = OmegaConf.merge(cfg, extra_cfg)
     
-    # Configure callbacks:
-    # ModelCheckpoint to save the best model based on training loss.
+    # Set up Weights & Biases logger using values from the config
+    wandb_logger = WandbLogger(project=cfg.wandb.project)
+    
+    # Configure callbacks from configuration values
     checkpoint_callback = ModelCheckpoint(
         monitor="train_loss",
         save_top_k=1,
         mode="min",
         filename="dummy_transformer-{epoch:02d}-{train_loss:.2f}"
     )
-    # LearningRateMonitor to log the learning rate at every step.
     lr_monitor = LearningRateMonitor(logging_interval="step")
     
-    # Instantiate the PyTorch Lightning Trainer with the WandB logger and callbacks.
     trainer = pl.Trainer(
-        max_epochs=10,
+        max_epochs=cfg.trainer.max_epochs,
         logger=wandb_logger,
         callbacks=[checkpoint_callback, lr_monitor],
-        log_every_n_steps=10
+        log_every_n_steps=cfg.trainer.log_every_n_steps,
+        strategy=cfg.trainer.strategy
     )
     
-    # Set up the dataset and dataloader.
-    batch_size = 32
-    seq_length = 32
-    vocab_size = 1000
-    dataset = DummyDataset(num_samples=1000, seq_length=seq_length, vocab_size=vocab_size)
-    train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    # Create the dataset and DataLoader
+    dataset = DummyDataset(
+        num_samples=cfg.dataset.num_samples,
+        seq_length=cfg.dataset.seq_length,
+        vocab_size=cfg.dataset.vocab_size
+    )
+    train_loader = DataLoader(dataset, batch_size=cfg.trainer.batch_size, shuffle=True)
     
-    # Instantiate the transformer model.
+    # Instantiate the model using configuration
     model = DummyTransformer(
-        input_vocab_size=vocab_size,
-        output_vocab_size=vocab_size,
-        max_seq_length=seq_length
+        input_vocab_size=cfg.model.input_vocab_size,
+        output_vocab_size=cfg.model.output_vocab_size,
+        max_seq_length=cfg.model.max_seq_length
     )
     
-    # Start training.
+    # Start training
     trainer.fit(model, train_loader)
 
 if __name__ == "__main__":

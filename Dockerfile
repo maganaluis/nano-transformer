@@ -1,43 +1,42 @@
-# Stage 1: Builder
-FROM python:3.13-bullseye AS builder
+FROM python:3.13-bullseye
 
-# Install Python 3, venv, pip, and build dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-venv \
-    python3-pip \
-    build-essential \
- && rm -rf /var/lib/apt/lists/*
+    openmpi-bin \
+    libopenmpi-dev \
+    openssh-server \
+    && rm -rf /var/lib/apt/lists/*
 
+# Setup SSHD for MPI over SSH
+RUN mkdir /var/run/sshd && \
+    echo 'root:root' | chpasswd && \
+    sed -i 's/^#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
+# Disable SSH host key checking for system-wide SSH clients
+RUN echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
+
+# Create SSH client config for root to avoid updating known_hosts
+RUN mkdir -p /root/.ssh && \
+    echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile /dev/null" > /root/.ssh/config
+
+# Expose SSH port for MPI communication
+EXPOSE 22
+
+# Setup working directory
 WORKDIR /app
 
-# Copy requirements and create a virtual environment
+# Copy application code
 COPY . .
+
+# Set up virtual environment and install dependencies
 RUN python3 -m venv /venv && \
     . /venv/bin/activate && \
     pip install --upgrade pip && \
     pip install --no-cache-dir .
 
-# Stage 2: Runtime
-FROM python:3.13-bullseye
-
-# Install Python in the runtime stage
-RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-venv \
-    python3-pip \
- && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-
-# Copy the virtual environment from the builder stage
-COPY --from=builder /venv /venv
-
-# Copy the application code from the builder stage
-COPY --from=builder /app /app
-
-# Ensure that the virtual environment is used
+# Use virtual environment in PATH
 ENV PATH="/venv/bin:$PATH"
 
-# Set the command to run your application
-CMD ["python3", "main.py"]
+# Default command: start SSH daemon
+CMD ["/usr/sbin/sshd", "-D"]

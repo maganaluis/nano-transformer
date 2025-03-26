@@ -1,4 +1,4 @@
-# src/trainer.py
+# src/trainer.py (Optional module if we need DDP/FSDP logic, not for now)
 
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader

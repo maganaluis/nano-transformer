@@ -1,0 +1,115 @@
+# PIPELINE DEFINITION
+# Name: simple-train-pipeline
+# Inputs:
+#    conf: dict [Default: {}]
+components:
+  comp-json-to-yaml:
+    executorLabel: exec-json-to-yaml
+    inputDefinitions:
+      parameters:
+        conf:
+          parameterType: STRUCT
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+  comp-model-train:
+    executorLabel: exec-model-train
+    inputDefinitions:
+      parameters:
+        conf:
+          parameterType: STRING
+deploymentSpec:
+  executors:
+    exec-json-to-yaml:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - json_to_yaml
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.12.1'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef json_to_yaml(conf: Dict) -> str:\n    import yaml\n    return\
+          \ yaml.dump(conf, sort_keys=False)\n\n"
+        image: deepvolition/nano-transformer:latest
+    exec-model-train:
+      container:
+        args:
+        - -c
+        - ' python3 main.py'
+        - --config_str
+        - '{{$.inputs.parameters[''conf'']}}'
+        command:
+        - /bin/sh
+        image: deepvolition/nano-transformer:latest
+        resources:
+          accelerator:
+            resourceCount: '1'
+            resourceType: nvidia.com/gpu
+pipelineInfo:
+  name: simple-train-pipeline
+root:
+  dag:
+    tasks:
+      json-to-yaml:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-json-to-yaml
+        inputs:
+          parameters:
+            conf:
+              componentInputParameter: conf
+        taskInfo:
+          name: json-to-yaml
+      model-train:
+        cachingOptions: {}
+        componentRef:
+          name: comp-model-train
+        dependentTasks:
+        - json-to-yaml
+        inputs:
+          parameters:
+            conf:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: json-to-yaml
+        taskInfo:
+          name: model-train
+  inputDefinitions:
+    parameters:
+      conf:
+        defaultValue: {}
+        isOptional: true
+        parameterType: STRUCT
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.12.1
+---
+platforms:
+  kubernetes:
+    deploymentSpec:
+      executors:
+        exec-model-train:
+          secretAsEnv:
+          - keyToEnv:
+            - envVar: WANDB_API_KEY
+              secretKey: password
+            secretName: wandb-api-key

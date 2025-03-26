@@ -1,0 +1,20 @@
+wandb:
+  project: dummy_transformer_project
+
+trainer:
+  max_epochs: 10
+  batch_size: 16
+  log_every_n_steps: 10
+  strategy: auto
+
+dataset:
+  num_samples: 1000
+  seq_length: 64
+  vocab_size: 1000
+
+model:
+  input_vocab_size: 1000
+  output_vocab_size: 1000
+  max_seq_length: 128
+
+config_str: null
